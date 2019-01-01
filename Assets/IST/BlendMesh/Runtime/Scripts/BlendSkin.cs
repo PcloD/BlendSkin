@@ -41,7 +41,6 @@ namespace IST.BlendSkin
             public ComputeBuffer dstNormals;
             public ComputeBuffer dstTangents;
 
-
             public void Release()
             {
                 if (weights != null)
@@ -151,6 +150,10 @@ namespace IST.BlendSkin
         void Reset()
         {
             blendCompute = AssetDatabase.LoadAssetAtPath<ComputeShader>(AssetDatabase.GUIDToAssetPath("6c9bb1542a25b414d8eb9a86d401531f"));
+        }
+
+        void OnValidate()
+        {
         }
 #endif
 
