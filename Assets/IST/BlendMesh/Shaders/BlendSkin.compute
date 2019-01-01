@@ -1,0 +1,91 @@
+#define BLOCK_SIZE 32
+#define MAX_INFLUENCE 4
+
+struct BoneWeight
+{
+    int indices[MAX_INFLUENCE];
+    float weights[MAX_INFLUENCE];
+};
+
+int _NumVertices;
+float _BlendWeight;
+
+StructuredBuffer<float3> _BasePoints;
+StructuredBuffer<float3> _BaseNormals;
+StructuredBuffer<float4> _BaseTangents;
+
+StructuredBuffer<float4x4> _Bones;
+StructuredBuffer<BoneWeight> _BoneWeights;
+StructuredBuffer<float3> _SrcPoints;
+StructuredBuffer<float3> _SrcNormals;
+StructuredBuffer<float4> _SrcTangents;
+
+RWStructuredBuffer<float3> _DstPoints;
+RWStructuredBuffer<float3> _DstNormals;
+RWStructuredBuffer<float4> _DstTangents;
+
+#pragma kernel Skinning
+[numthreads(BLOCK_SIZE, 1, 1)]
+void Skinning(uint3 tid : SV_DispatchThreadID)
+{
+    int vi = tid.x;
+
+    float4 spoint = float4(_SrcPoints[vi], 1.0);
+    float4 snormal = float4(_SrcNormals[vi], 0.0f);
+    float4 stangent = _SrcTangents[vi];
+
+    float3 dpoint = float3(0.0f, 0.0f, 0.0f);
+    float3 dnormal = float3(0.0f, 0.0f, 0.0f);
+    float3 dtangent = float3(0.0f, 0.0f, 0.0f);
+
+    for (int bi = 0; bi < MAX_INFLUENCE; ++bi) {
+        float w = _BoneWeights[vi].weights[bi];
+        if (w <= 0.0f)
+            continue;
+        float4x4 bone = _Bones[_BoneWeights[vi].indices[bi]];
+
+        dpoint += mul(bone, spoint).xyz * w;
+        dnormal += mul(bone, snormal).xyz * w;
+        dtangent += mul(bone, float4(stangent.xyz, 0.0)).xyz * w;
+    }
+
+    _DstPoints[vi] = dpoint;
+    _DstNormals[vi] = normalize(dnormal);
+    _DstTangents[vi] = float4(normalize(dtangent), stangent.w);
+}
+
+
+#pragma kernel BlendPrepare
+[numthreads(BLOCK_SIZE, 1, 1)]
+void BlendPrepare(uint3 tid : SV_DispatchThreadID)
+{
+    int vi = tid.x;
+
+    _DstPoints[vi] += _BasePoints[vi];
+    _DstNormals[vi] += _BaseNormals[vi];
+    _DstTangents[vi] += _BaseTangents[vi];
+}
+
+#pragma kernel BlendAdd
+[numthreads(BLOCK_SIZE, 1, 1)]
+void BlendAdd(uint3 tid : SV_DispatchThreadID)
+{
+    int vi = tid.x;
+
+    _DstPoints[vi] += _BasePoints[vi] + (_SrcPoints[vi] - _BasePoints[vi]) * _BlendWeight;
+    _DstNormals[vi] += _BaseNormals[vi] + (_SrcNormals[vi] - _BaseNormals[vi]) * _BlendWeight;
+
+    float4 tan = _DstTangents[vi];
+    tan.xyz += _BaseTangents[vi].xyz + (_SrcTangents[vi].xyz - _BaseTangents[vi].xyz) * _BlendWeight;
+    _DstTangents[vi] = tan;
+}
+
+#pragma kernel BlendFinish
+[numthreads(BLOCK_SIZE, 1, 1)]
+void BlendFinish(uint3 tid : SV_DispatchThreadID)
+{
+    int vi = tid.x;
+
+    _DstNormals[vi] = normalize(_DstNormals[vi]);
+    _DstTangents[vi] = float4(normalize(_DstTangents[vi].xyz), _DstTangents[vi].w);
+}
