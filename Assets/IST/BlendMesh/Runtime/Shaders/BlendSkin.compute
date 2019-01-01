@@ -61,9 +61,9 @@ void BlendPrepare(uint3 tid : SV_DispatchThreadID)
 {
     int vi = tid.x;
 
-    _DstPoints[vi] += _BasePoints[vi];
-    _DstNormals[vi] += _BaseNormals[vi];
-    _DstTangents[vi] += _BaseTangents[vi];
+    _DstPoints[vi] = _BasePoints[vi];
+    _DstNormals[vi] = _BaseNormals[vi];
+    _DstTangents[vi] = _BaseTangents[vi];
 }
 
 #pragma kernel BlendAdd
