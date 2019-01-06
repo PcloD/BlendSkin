@@ -20,9 +20,10 @@ namespace IST.BlendSkin
         MeshBuffers m_baseMeshBuffers = new MeshBuffers();
         List<MeshBuffers> m_blendSourceBuffers = new List<MeshBuffers>();
 
-        int m_kSkinning = -1;
+        int m_kSkinning4 = -1;
         int m_kBlendPrepare = -1;
         int m_kBlendAdd = -1;
+        int m_kBlendAddSkinning4 = -1;
         int m_kBlendFinish = -1;
         #endregion
 
@@ -183,12 +184,14 @@ namespace IST.BlendSkin
 
         void SetupKernels()
         {
-            if (m_kSkinning < 0)
-                m_kSkinning = m_blendCompute.FindKernel("Skinning");
+            if (m_kSkinning4 < 0)
+                m_kSkinning4 = m_blendCompute.FindKernel("Skinning4");
             if (m_kBlendPrepare < 0)
                 m_kBlendPrepare = m_blendCompute.FindKernel("BlendPrepare");
             if (m_kBlendAdd < 0)
                 m_kBlendAdd = m_blendCompute.FindKernel("BlendAdd");
+            if (m_kBlendAddSkinning4 < 0)
+                m_kBlendAddSkinning4 = m_blendCompute.FindKernel("BlendAddSkinning4");
             if (m_kBlendFinish < 0)
                 m_kBlendFinish = m_blendCompute.FindKernel("BlendFinish");
         }
